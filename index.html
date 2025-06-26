@@ -13,6 +13,9 @@
 </head>
 <body>
   <h1>College Recommendation</h1>
+  <h4>based on cutoffs of 2024 CAP Round I</h4>
+    <h4>Aesthetics coming soon...</h4>
+
 
   <label>Percentile:
     <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
@@ -20,93 +23,67 @@
 
   <label>Category:
     <select id="category">
-      <option value="GOPENS">GOPENS</option>
-<option value="GSCS">GSCS</option>
-<option value="GSTS">GSTS</option>
-<option value="GVJS">GVJS</option>
-<option value="GNT1S">GNT1S</option>
-<option value="GNT2S">GNT2S</option>
-<option value="GOBCS">GOBCS</option>
-<option value="GSEBCS">GSEBCS</option>
-<option value="LOPENS">LOPENS</option>
-<option value="LSCS">LSCS</option>
-<option value="LSTS">LSTS</option>
-<option value="LNT1S">LNT1S</option>
-<option value="LNT3S">LNT3S</option>
-<option value="LOBCS">LOBCS</option>
-<option value="LSEBCS">LSEBCS</option>
-<option value="PWDOPENS">PWDOPENS</option>
-<option value="PWDOBCS">PWDOBCS</option>
-<option value="DEFOPENS">DEFOPENS</option>
-<option value="DEFOBCS">DEFOBCS</option>
-<option value="TFWS">TFWS</option>
-<option value="PWDRSCS">PWDRSCS</option>
-<option value="DEFROBCS">DEFROBCS</option>
-<option value="ORPHAN">ORPHAN</option>
-<option value="EWS">EWS</option>
-<option value="GNT3S">GNT3S</option>
-<option value="LNT2S">LNT2S</option>
-<option value="DEFRNT1S">DEFRNT1S</option>
-<option value="LVJS">LVJS</option>
-<option value="GOPENH">GOPENH</option>
-<option value="GSCH">GSCH</option>
-<option value="GSTH">GSTH</option>
-<option value="GNT2H">GNT2H</option>
-<option value="GOBCH">GOBCH</option>
-<option value="GSEBCH">GSEBCH</option>
-<option value="LOPENH">LOPENH</option>
-<option value="LOBCH">LOBCH</option>
-<option value="LSEBCH">LSEBCH</option>
-<option value="GSCO">GSCO</option>
-<option value="GVJO">GVJO</option>
-<option value="LOPENO">LOPENO</option>
-<option value="GOPENO">GOPENO</option>
-<option value="GOBCO">GOBCO</option>
-<option value="GSEBCO">GSEBCO</option>
-<option value="LOBCO">LOBCO</option>
-<option value="LSCH">LSCH</option>
-<option value="GNT3H">GNT3H</option>
-<option value="GVJH">GVJH</option>
-<option value="LSTH">LSTH</option>
-<option value="LVJH">LVJH</option>
-<option value="LNT1H">LNT1H</option>
-<option value="PWDOPENH">PWDOPENH</option>
-<option value="GNT1O">GNT1O</option>
-<option value="GNT2O">GNT2O</option>
-<option value="GNT3O">GNT3O</option>
-<option value="LSTO">LSTO</option>
-<option value="GNT1H">GNT1H</option>
-<option value="LNT3H">LNT3H</option>
-<option value="PWDOBCH">PWDOBCH</option>
-<option value="GSTO">GSTO</option>
-<option value="LSCO">LSCO</option>
-<option value="LVJO">LVJO</option>
-<option value="LNT2O">LNT2O</option>
-<option value="LNT2H">LNT2H</option>
-<option value="LSEBCO">LSEBCO</option>
-<option value="LNT1O">LNT1O</option>
-<option value="LNT3O">LNT3O</option>
-<option value="DEFSCS">DEFSCS</option>
-<option value="PWDRSTS">PWDRSTS</option>
-<option value="MI">MI</option>
-<option value="PWDRNT2S">PWDRNT2S</option>
-<option value="DEFRSCS">DEFRSCS</option>
-<option value="DEFRNT2S">DEFRNT2S</option>
-<option value="PWDSCS">PWDSCS</option>
-<option value="DEFSEBCS">DEFSEBCS</option>
-
+      <option value="OPEN">OPEN</option>
+      <option value="OBC">OBC</option>
+      <option value="SC">SC</option>
+      <option value="ST">ST</option>
+      <option value="VJ">VJ</option>
+      <option value="NT1">NT1</option>
+      <option value="NT2">NT2</option>
+      <option value="NT3">NT3</option>
+      <option value="SEBC">SEBC</option>
+      <option value="EWS">EWS</option>
+      <option value="PWD">PWD</option>
+      <option value="DEF">DEF</option>
+      <option value="TFWS">TFWS</option>
+      <option value="ORPHAN">ORPHAN</option>
     </select>
   </label><br>
 
   <button onclick="recommend()">Get Recommendations</button>
+<input type="text" id="liveSearch" placeholder="Search college or branch..." oninput="liveSearchResults()" />
+<p>Legends: Starting character G-General, L-Ladies, End character H-Home University, O-Other than Home University,S-State Level, AI- All India Seat.</p>
 
   <div class="results" id="results"></div>
-  
 
   <script>
+    function liveSearchResults() {
+  const keyword = document.getElementById("liveSearch").value.toLowerCase();
+  const collegeDivs = document.querySelectorAll(".college");
+
+  collegeDivs.forEach(college => {
+    const collegeName = college.querySelector("h3").textContent.toLowerCase();
+    const branchTexts = Array.from(college.querySelectorAll(".branch")).map(
+      b => b.textContent.toLowerCase()
+    );
+
+    const matchFound =
+      collegeName.includes(keyword) ||
+      branchTexts.some(text => text.includes(keyword));
+
+    college.style.display = matchFound ? "block" : "none";
+  });
+}
+
     let collegeData = {};
 
-    // Fetch data.json once page loads
+    const categoryMap = {
+      "OPEN": ["GOPENS", "LOPENS", "GOPENH", "LOPENH", "GOPENO", "LOPENO", "PWDOPENS", "PWDOPENH"],
+      "OBC": ["GOBCS", "LOBCS", "GOBCH", "LOBCH", "GOBCO", "LOBCO", "PWDOBCS", "PWDOBCH", "PWDROBCS", "DEFROBCS", "DEFOBCS"],
+      "SC": ["GSCS", "LSCS", "GSCH", "LSCH", "PWDSCS", "DEFSCS", "DEFRSCS", "PWDRSCS"],
+      "ST": ["GSTS", "LSTS", "GSTH", "LSTH", "GSTO", "LSTO", "PWDRSTS"],
+      "VJ": ["GVJS", "LVJS", "GVJH", "LVJH", "GVJO", "LVJO"],
+      "NT1": ["GNT1S", "LNT1S", "GNT1H", "LNT1H", "GNT1O", "LNT1O", "DEFRNT1S"],
+      "NT2": ["GNT2S", "LNT2S", "GNT2H", "LNT2H", "GNT2O", "LNT2O", "DEFRNT2S", "PWDRNT2S"],
+      "NT3": ["GNT3S", "LNT3S", "GNT3H", "LNT3H", "GNT3O", "LNT3O"],
+      "SEBC": ["GSEBCS", "LSEBCS", "GSEBCH", "LSEBCH", "GSEBCO", "LSEBCO", "DEFSEBCS"],
+      "EWS": ["EWS"],
+      "PWD": ["PWDOPENS", "PWDOPENH", "PWDSCS", "PWDOBCS", "PWDOBCH", "PWDRSCS", "PWDRSTS", "PWDRNT2S"],
+      "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFROBCS", "DEFSEBCS", "DEFRNT1S", "DEFRSCS", "DEFRNT2S"],
+      "TFWS": ["TFWS"],
+      "ORPHAN": ["ORPHAN"]
+    };
+
     fetch("data.json")
       .then(res => res.json())
       .then(json => {
@@ -118,70 +95,69 @@
         console.error("Failed to load data.json", err);
       });
 
-  function recommend() {
-  const percentile = parseFloat(document.getElementById("percentile").value);
-  const category = document.getElementById("category").value;
-  const resultsDiv = document.getElementById("results");
-  resultsDiv.innerHTML = "";
+    function recommend() {
+      const percentile = parseFloat(document.getElementById("percentile").value);
+      const selectedGroup = document.getElementById("category").value;
+      const validCategories = categoryMap[selectedGroup] || [];
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
 
-  if (!collegeData || Object.keys(collegeData).length === 0) {
-    resultsDiv.innerText = "Data is still loading...";
-    return;
-  }
+      if (!collegeData || Object.keys(collegeData).length === 0) {
+        resultsDiv.innerText = "Data is still loading...";
+        return;
+      }
 
-  const collegeMatches = [];
+      const collegeMatches = [];
 
-  for (const [collegeName, details] of Object.entries(collegeData)) {
-    const matchingBranches = [];
+      for (const [collegeName, details] of Object.entries(collegeData)) {
+        const matchingBranches = [];
 
-    for (const branch of details.branches) {
-      for (const cutoff of branch.cutoffs || []) {
-        if (
-          cutoff.category === category &&
-          cutoff.percentile >= percentile - 5 &&
-          cutoff.percentile <= percentile + 5
-        ) {
-          matchingBranches.push({ branch: branch.branch, cutoff });
-          break;
+        for (const branch of details.branches) {
+          for (const cutoff of branch.cutoffs || []) {
+            if (
+              validCategories.includes(cutoff.category) &&
+              cutoff.percentile >= percentile - 5 &&
+              cutoff.percentile <= percentile + 5
+            ) {
+              matchingBranches.push({ branch: branch.branch, cutoff });
+              break;
+            }
+          }
+        }
+
+        if (matchingBranches.length > 0) {
+          matchingBranches.sort((a, b) => b.cutoff.percentile - a.cutoff.percentile);
+
+          collegeMatches.push({
+            collegeName,
+            branches: matchingBranches,
+            highestCutoff: matchingBranches[0].cutoff.percentile
+          });
         }
       }
-    }
 
-    if (matchingBranches.length > 0) {
-      // Sort branches in descending order of cutoff percentile
-      matchingBranches.sort((a, b) => b.cutoff.percentile - a.cutoff.percentile);
+      collegeMatches.sort((a, b) => b.highestCutoff - a.highestCutoff);
 
-      // Store college and its matching branches
-      collegeMatches.push({
-        collegeName,
-        branches: matchingBranches,
-        highestCutoff: matchingBranches[0].cutoff.percentile
+      collegeMatches.forEach(college => {
+        const collegeEl = document.createElement("div");
+        collegeEl.className = "college";
+        collegeEl.innerHTML = `<h3>${college.collegeName}</h3>`;
+
+        college.branches.forEach(b => {
+          collegeEl.innerHTML += `
+            <div class="branch">
+              <strong>${b.branch}</strong><br/>
+              Caste: <b>${b.cutoff.category}</b><br/>
+              Required: ${b.cutoff.percentile} | Your: ${percentile}
+            </div>
+          `;
+        });
+
+        resultsDiv.appendChild(collegeEl);
       });
     }
-  }
-
-  // Sort colleges by highest cutoff in descending order
-  collegeMatches.sort((a, b) => b.highestCutoff - a.highestCutoff);
-
-  // Render sorted results
-  collegeMatches.forEach(college => {
-    const collegeEl = document.createElement("div");
-    collegeEl.className = "college";
-    collegeEl.innerHTML = `<h3>${college.collegeName}</h3>`;
-
-    college.branches.forEach(b => {
-      collegeEl.innerHTML += `
-        <div class="branch">
-          <strong>${b.branch}</strong><br/>
-          Required: ${b.cutoff.percentile} | Your: ${percentile}
-        </div>
-      `;
-    });
-
-    resultsDiv.appendChild(collegeEl);
-  });
-}
-
+    
   </script>
+
 </body>
 </html>
