@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Recommender</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; }
+    input, select, button { padding: 0.5rem; margin: 0.5rem 0; }
+    .results { margin-top: 2rem; background: white; padding: 1rem; border-radius: 8px; }
+    .college { margin-bottom: 1rem; }
+    .branch { margin-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>College Recommendation</h1>
+
+  <label>Percentile:
+    <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
+  </label><br>
+
+  <label>Category:
+    <select id="category">
+      <option value="GOPENS">GOPENS</option>
+<option value="GSCS">GSCS</option>
+<option value="GSTS">GSTS</option>
+<option value="GVJS">GVJS</option>
+<option value="GNT1S">GNT1S</option>
+<option value="GNT2S">GNT2S</option>
+<option value="GOBCS">GOBCS</option>
+<option value="GSEBCS">GSEBCS</option>
+<option value="LOPENS">LOPENS</option>
+<option value="LSCS">LSCS</option>
+<option value="LSTS">LSTS</option>
+<option value="LNT1S">LNT1S</option>
+<option value="LNT3S">LNT3S</option>
+<option value="LOBCS">LOBCS</option>
+<option value="LSEBCS">LSEBCS</option>
+<option value="PWDOPENS">PWDOPENS</option>
+<option value="PWDOBCS">PWDOBCS</option>
+<option value="DEFOPENS">DEFOPENS</option>
+<option value="DEFOBCS">DEFOBCS</option>
+<option value="TFWS">TFWS</option>
+<option value="PWDRSCS">PWDRSCS</option>
+<option value="DEFROBCS">DEFROBCS</option>
+<option value="ORPHAN">ORPHAN</option>
+<option value="EWS">EWS</option>
+<option value="GNT3S">GNT3S</option>
+<option value="LNT2S">LNT2S</option>
+<option value="DEFRNT1S">DEFRNT1S</option>
+<option value="LVJS">LVJS</option>
+<option value="GOPENH">GOPENH</option>
+<option value="GSCH">GSCH</option>
+<option value="GSTH">GSTH</option>
+<option value="GNT2H">GNT2H</option>
+<option value="GOBCH">GOBCH</option>
+<option value="GSEBCH">GSEBCH</option>
+<option value="LOPENH">LOPENH</option>
+<option value="LOBCH">LOBCH</option>
+<option value="LSEBCH">LSEBCH</option>
+<option value="GSCO">GSCO</option>
+<option value="GVJO">GVJO</option>
+<option value="LOPENO">LOPENO</option>
+<option value="GOPENO">GOPENO</option>
+<option value="GOBCO">GOBCO</option>
+<option value="GSEBCO">GSEBCO</option>
+<option value="LOBCO">LOBCO</option>
+<option value="LSCH">LSCH</option>
+<option value="GNT3H">GNT3H</option>
+<option value="GVJH">GVJH</option>
+<option value="LSTH">LSTH</option>
+<option value="LVJH">LVJH</option>
+<option value="LNT1H">LNT1H</option>
+<option value="PWDOPENH">PWDOPENH</option>
+<option value="GNT1O">GNT1O</option>
+<option value="GNT2O">GNT2O</option>
+<option value="GNT3O">GNT3O</option>
+<option value="LSTO">LSTO</option>
+<option value="GNT1H">GNT1H</option>
+<option value="LNT3H">LNT3H</option>
+<option value="PWDOBCH">PWDOBCH</option>
+<option value="GSTO">GSTO</option>
+<option value="LSCO">LSCO</option>
+<option value="LVJO">LVJO</option>
+<option value="LNT2O">LNT2O</option>
+<option value="LNT2H">LNT2H</option>
+<option value="LSEBCO">LSEBCO</option>
+<option value="LNT1O">LNT1O</option>
+<option value="LNT3O">LNT3O</option>
+<option value="DEFSCS">DEFSCS</option>
+<option value="PWDRSTS">PWDRSTS</option>
+<option value="MI">MI</option>
+<option value="PWDRNT2S">PWDRNT2S</option>
+<option value="DEFRSCS">DEFRSCS</option>
+<option value="DEFRNT2S">DEFRNT2S</option>
+<option value="PWDSCS">PWDSCS</option>
+<option value="DEFSEBCS">DEFSEBCS</option>
+
+    </select>
+  </label><br>
+
+  <button onclick="recommend()">Get Recommendations</button>
+
+  <div class="results" id="results"></div>
+  
+
+  <script>
+    let collegeData = {};
+
+    // Fetch data.json once page loads
+    fetch("data.json")
+      .then(res => res.json())
+      .then(json => {
+        collegeData = json;
+        console.log("Data loaded");
+      })
+      .catch(err => {
+        document.getElementById("results").innerText = "Error loading data.";
+        console.error("Failed to load data.json", err);
+      });
+
+  function recommend() {
+  const percentile = parseFloat(document.getElementById("percentile").value);
+  const category = document.getElementById("category").value;
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "";
+
+  if (!collegeData || Object.keys(collegeData).length === 0) {
+    resultsDiv.innerText = "Data is still loading...";
+    return;
+  }
+
+  const collegeMatches = [];
+
+  for (const [collegeName, details] of Object.entries(collegeData)) {
+    const matchingBranches = [];
+
+    for (const branch of details.branches) {
+      for (const cutoff of branch.cutoffs || []) {
+        if (
+          cutoff.category === category &&
+          cutoff.percentile >= percentile - 5 &&
+          cutoff.percentile <= percentile + 5
+        ) {
+          matchingBranches.push({ branch: branch.branch, cutoff });
+          break;
+        }
+      }
+    }
+
+    if (matchingBranches.length > 0) {
+      // Sort branches in descending order of cutoff percentile
+      matchingBranches.sort((a, b) => b.cutoff.percentile - a.cutoff.percentile);
+
+      // Store college and its matching branches
+      collegeMatches.push({
+        collegeName,
+        branches: matchingBranches,
+        highestCutoff: matchingBranches[0].cutoff.percentile
+      });
+    }
+  }
+
+  // Sort colleges by highest cutoff in descending order
+  collegeMatches.sort((a, b) => b.highestCutoff - a.highestCutoff);
+
+  // Render sorted results
+  collegeMatches.forEach(college => {
+    const collegeEl = document.createElement("div");
+    collegeEl.className = "college";
+    collegeEl.innerHTML = `<h3>${college.collegeName}</h3>`;
+
+    college.branches.forEach(b => {
+      collegeEl.innerHTML += `
+        <div class="branch">
+          <strong>${b.branch}</strong><br/>
+          Required: ${b.cutoff.percentile} | Your: ${percentile}
+        </div>
+      `;
+    });
+
+    resultsDiv.appendChild(collegeEl);
+  });
+}
+
+  </script>
+</body>
+</html>
