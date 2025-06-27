@@ -1,22 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>College Recommender</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; }
-    input, select, button { padding: 0.5rem; margin: 0.5rem 0; }
-    .results { margin-top: 2rem; background: white; padding: 1rem; border-radius: 8px; }
-    .college { margin-bottom: 1rem; }
-    .branch { margin-left: 1rem; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 </head>
 <body>
-  <h1>College Recommendation</h1>
-  <h4>based on cutoffs of 2024 CAP Round I</h4>
-    <h4>Aesthetics coming soon...</h4>
-
-
+<h1><i class="fas fa-compass" style="margin-right: 10px;"></i> CAP_Compass</h1>
+  <h4>Based on CAP Round I (2024)</h4>
   <label>Percentile:
     <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
   </label><br>
@@ -37,33 +30,35 @@
       <option value="DEF">DEF</option>
       <option value="TFWS">TFWS</option>
       <option value="ORPHAN">ORPHAN</option>
+      <option value="MI">MI</option>
+    </select>
+  </label><br>
+
+  <label>Display Mode:
+    <select id="viewMode">
+              <option value="flat">Flat Ranked List</option>
+
+      <option value="grouped">Group by College</option>
     </select>
   </label><br>
 
   <button onclick="recommend()">Get Recommendations</button>
-<input type="text" id="liveSearch" placeholder="Search college or branch..." oninput="liveSearchResults()" />
-<p>Legends: Starting character G-General, L-Ladies, End character H-Home University, O-Other than Home University,S-State Level, AI- All India Seat.</p>
+  <input type="text" id="liveSearch" placeholder="Search college or branch..." oninput="liveSearchResults()" />
+
+  <p>Legends: G - General, L - Ladies, H - Home Univ, O - Other Univ, S - State Level, AI - All India</p>
 
   <div class="results" id="results"></div>
 
   <script>
     function liveSearchResults() {
-  const keyword = document.getElementById("liveSearch").value.toLowerCase();
-  const collegeDivs = document.querySelectorAll(".college");
+      const keyword = document.getElementById("liveSearch").value.toLowerCase();
+      const collegeDivs = document.querySelectorAll(".college");
 
-  collegeDivs.forEach(college => {
-    const collegeName = college.querySelector("h3").textContent.toLowerCase();
-    const branchTexts = Array.from(college.querySelectorAll(".branch")).map(
-      b => b.textContent.toLowerCase()
-    );
-
-    const matchFound =
-      collegeName.includes(keyword) ||
-      branchTexts.some(text => text.includes(keyword));
-
-    college.style.display = matchFound ? "block" : "none";
-  });
-}
+      collegeDivs.forEach(college => {
+        const text = college.textContent.toLowerCase();
+        college.style.display = text.includes(keyword) ? "block" : "none";
+      });
+    }
 
     let collegeData = {};
 
@@ -81,14 +76,14 @@
       "PWD": ["PWDOPENS", "PWDOPENH", "PWDSCS", "PWDOBCS", "PWDOBCH", "PWDRSCS", "PWDRSTS", "PWDRNT2S"],
       "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFROBCS", "DEFSEBCS", "DEFRNT1S", "DEFRSCS", "DEFRNT2S"],
       "TFWS": ["TFWS"],
-      "ORPHAN": ["ORPHAN"]
+      "ORPHAN": ["ORPHAN"],
+      "MI": ["MI"]
     };
 
     fetch("data.json")
       .then(res => res.json())
       .then(json => {
         collegeData = json;
-        console.log("Data loaded");
       })
       .catch(err => {
         document.getElementById("results").innerText = "Error loading data.";
@@ -98,6 +93,7 @@
     function recommend() {
       const percentile = parseFloat(document.getElementById("percentile").value);
       const selectedGroup = document.getElementById("category").value;
+      const viewMode = document.getElementById("viewMode").value;
       const validCategories = categoryMap[selectedGroup] || [];
       const resultsDiv = document.getElementById("results");
       resultsDiv.innerHTML = "";
@@ -107,11 +103,9 @@
         return;
       }
 
-      const collegeMatches = [];
+      const matchingData = [];
 
       for (const [collegeName, details] of Object.entries(collegeData)) {
-        const matchingBranches = [];
-
         for (const branch of details.branches) {
           for (const cutoff of branch.cutoffs || []) {
             if (
@@ -119,45 +113,71 @@
               cutoff.percentile >= percentile - 5 &&
               cutoff.percentile <= percentile + 5
             ) {
-              matchingBranches.push({ branch: branch.branch, cutoff });
-              break;
+              matchingData.push({
+                collegeName,
+                branchName: branch.branch,
+                category: cutoff.category,
+                cutoffPercentile: cutoff.percentile
+              });
             }
           }
         }
-
-        if (matchingBranches.length > 0) {
-          matchingBranches.sort((a, b) => b.cutoff.percentile - a.cutoff.percentile);
-
-          collegeMatches.push({
-            collegeName,
-            branches: matchingBranches,
-            highestCutoff: matchingBranches[0].cutoff.percentile
-          });
-        }
       }
 
-      collegeMatches.sort((a, b) => b.highestCutoff - a.highestCutoff);
+      matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
 
-      collegeMatches.forEach(college => {
-        const collegeEl = document.createElement("div");
-        collegeEl.className = "college";
-        collegeEl.innerHTML = `<h3>${college.collegeName}</h3>`;
-
-        college.branches.forEach(b => {
-          collegeEl.innerHTML += `
+      if (viewMode === "flat") {
+        matchingData.forEach((entry, index) => {
+          const entryEl = document.createElement("div");
+          entryEl.className = "college";
+          entryEl.innerHTML = `
+            <h3 class="college-name">${index + 1}) ${entry.collegeName}</h3>
             <div class="branch">
-              <strong>${b.branch}</strong><br/>
-              Caste: <b>${b.cutoff.category}</b><br/>
-              Required: ${b.cutoff.percentile} | Your: ${percentile}
+              <span class="branch-name">${entry.branchName}</span><br/>
+              Caste: <b>${entry.category}</b><br/>
+              Required: ${entry.cutoffPercentile} | Your: ${percentile}
             </div>
           `;
+          resultsDiv.appendChild(entryEl);
+        });
+      } else {
+        const grouped = {};
+        matchingData.forEach(entry => {
+          if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
+          grouped[entry.collegeName].push(entry);
         });
 
-        resultsDiv.appendChild(collegeEl);
-      });
+        let i = 1;
+        for (const [collegeName, branches] of Object.entries(grouped)) {
+          const collegeEl = document.createElement("div");
+          collegeEl.className = "college";
+          collegeEl.innerHTML = `<h3 class="college-name">${i++}) ${collegeName}</h3>`;
+          branches.forEach(b => {
+            collegeEl.innerHTML += `
+              <div class="branch">
+                <span class="branch-name">${b.branchName}</span><br/>
+                Caste: <b>${b.category}</b><br/>
+                Required: ${b.cutoffPercentile} | Your: ${percentile}
+              </div>
+            `;
+          });
+          resultsDiv.appendChild(collegeEl);
+        }
+      }
     }
-    
-  </script>
 
+document.addEventListener('DOMContentLoaded', function() {
+  // Prevent any desktop-style overrides
+  document.body.classList.add('mobile-rendering');
+  
+  // Force mobile viewport
+  const viewportMeta = document.createElement('meta');
+  viewportMeta.name = 'viewport';
+  viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no';
+  document.head.appendChild(viewportMeta);
+});
+
+
+  </script>
 </body>
 </html>
