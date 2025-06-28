@@ -1,19 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>College Recommender</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAP_Compass</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
 </head>
 <body>
-<h1><i class="fas fa-compass" style="margin-right: 10px;"></i> CAP_Compass</h1>
+  <h1><i class="fas fa-compass"></i> CAP_Compass</h1>
   <h4>Based on CAP Round I (2024)</h4>
-  <label>Percentile:
-    <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
+
+  <!-- Input Mode -->
+  <label>Search Mode:
+    <select id="percentileMode" onchange="togglePercentileMode()">
+      <option value="simple">Single Percentile</option>
+      <option value="range">Range (Lower & Upper)</option>
+    </select>
   </label><br>
 
+  <div id="percentileSingle">
+    <label>Percentile:
+      <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
+    </label><br>
+  </div>
+  <div id="percentileRange" style="display: none;">
+    <label>Lower Percentile:
+      <input type="number" id="lowerPercentile" step="0.1" placeholder="Lower bound" />
+    </label><br>
+    <label>Upper Percentile:
+      <input type="number" id="upperPercentile" step="0.1" placeholder="Upper bound" />
+    </label><br>
+  </div>
+
+  <!-- Category & Gender -->
   <label>Category:
     <select id="category">
       <option value="OPEN">OPEN</option>
@@ -34,150 +54,344 @@
     </select>
   </label><br>
 
+  <label>Gender:
+    <select id="gender">
+      <option value="any">Female / Any</option>
+      <option value="male">Male</option>
+    </select>
+  </label><br>
+
+  <!-- Branch Filter -->
+  <label>Main Branch Group:
+    <select id="mainBranchGroup">
+      <option value="">-- Any --</option>
+    </select>
+  </label><br>
+
   <label>Display Mode:
     <select id="viewMode">
-              <option value="flat">Flat Ranked List</option>
-
+      <option value="flat">Flat Ranked List</option>
       <option value="grouped">Group by College</option>
     </select>
   </label><br>
 
   <button onclick="recommend()">Get Recommendations</button>
+  <button onclick="document.getElementById('results').innerHTML = ''">Clear</button>
+  <br>
   <input type="text" id="liveSearch" placeholder="Search college or branch..." oninput="liveSearchResults()" />
 
   <p>Legends: G - General, L - Ladies, H - Home Univ, O - Other Univ, S - State Level, AI - All India</p>
 
+  <div id="results-count"></div>
   <div class="results" id="results"></div>
 
-  <script>
-    function liveSearchResults() {
-      const keyword = document.getElementById("liveSearch").value.toLowerCase();
-      const collegeDivs = document.querySelectorAll(".college");
+<script>
+const branchMap = {
+  "CS Core": [
+    "Computer Science", 
+    "Computer Science and Engineering",
+    "Computer Science and Engineering (Aided)",
+    "Computer Science and Engineering (Unaided)",
+    "Computer Engineering",
+    "Computer Engineering (Software Engineering)",
+    "Computer Science and Technology",
+    "Computer Technology",
+    "Computer Science and Information Technology"
+  ],
+  "CS with Specs": [
+    "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
+    "Computer Science and Engineering(Artificial Intelligence and Machine Learning)",
+    "Computer Science and Engineering (Artificial Intelligence and Data Science)",
+    "Computer Science and Engineering (Artificial Intelligence)",
+    "Computer Science and Engineering (Cyber Security)",
+    "Computer Science and Engineering(Cyber Security)",
+    "Computer Science and Engineering(Data Science)",
+    "Computer Science and Engineering (Internet of Things and Cyber Security Including Block Chain",
+    "Computer Science and Engineering (IoT)",
+    "Computer Science and Business Systems",
+    "Computer Science and Design",
+    "Artificial Intelligence",
+    "Artificial Intelligence (AI) and Data Science",
+    "Artificial Intelligence and Data Science",
+    "Artificial Intelligence and Machine Learning",
+    "Artificial Intelligence and Machine Learning (Un-Aided)",
+    "Cyber Security",
+    "Data Engineering",
+    "Data Science"
+  ],
+  "IT": [
+    "Information Technology",
+    "Information Technology (Aided)",
+    "Information Technology (Unaided)"
+  ],
+  "Mechanical": [
+    "Mechanical Engineering", 
+    "Mechanical Engineering (Aided)", 
+    "Mechanical Engineering Automobile",
+    "Mechanical Engineering[Sandwich]", 
+    "Mechanical & Automation Engineering", 
+    "Mechanical and Mechatronics Engineering (Additive Manufacturing)",
+    "Mechatronics Engineering"
+  ],
+  "Electrical": [
+    "Electrical Engineering", 
+    "Electrical Engineering (Aided)", 
+    "Electrical Engg[Electronics and Power]",
+    "Electrical and Computer Engineering", 
+    "Electrical and Electronics Engineering", 
+    "Electrical, Electronics and Power"
+  ],
+  "Electronics & Communication": [
+    "Electronics Engineering", 
+    "Electronics Engineering ( VLSI Design and Technology)",
+    "Electronics Engineering (Aided)", 
+    "Electronics and Biomedical Engineering",
+    "Electronics and Communication Engineering", 
+    "Electronics and Communication(Advanced Communication Technology)",
+    "Electronics and Communication (Advanced Communication Technology)", 
+    "Electronics and Telecommunication Engg",
+    "Electronics and Telecommunication Engineering", 
+    "Electronics and Computer Engineering",
+    "Electronics and Computer Science", 
+    "VLSI"
+  ],
+  "Civil": [
+    "Civil Engineering", 
+    "Civil Engineering (Aided)", 
+    "Civil Engineering and Planning",
+    "Civil and Environmental Engineering", 
+    "Civil and infrastructure Engineering",
+    "Structural Engineering"
+  ],
+  "Chemical": [
+    "Chemical Engineering",
+    "Pharmaceutical and Fine Chemical Technology",
+    "Pharmaceuticals Chemistry and Technology",
+    "Petro Chemical Engineering",
+    "Surface Coating Technology",
+    "Oil Fats and Waxes Technology",
+    "Oil and Paints Technology",
+    "Oil,Oleochemicals and Surfactants Technology",
+    "Paints Technology"
+  ],
+  "Textile": [
+    "Textile Chemistry",
+    "Textile Technology",
+    "Textile Engineering / Technology",
+    "Technical Textiles",
+    "Man Made Textile Technology",
+    "Fibres and Textile Processing Technology"
+  ],
+  "Production & Manufacturing": [
+    "Production Engineering",
+    "Production Engineering (Sandwich)",
+    "Manufacturing Science and Engineering"
+  ],
+  "Instrumentation & IoT": [
+    "Instrumentation Engineering",
+    "Instrumentation and Control Engineering",
+    "Internet of Things (IoT)",
+    "Industrial IoT"
+  ],
+  "Robotics & Automation": [
+    "Automation and Robotics",
+    "Robotics and Artificial Intelligence",
+    "Robotics and Automation"
+  ],
+  "Bio & Health": [
+    "Bio Medical Engineering",
+    "Bio Technology",
+    "Food Engineering and Technology",
+    "Food Technology",
+    "Food Technology And Management"
+  ],
+  "Design & Architecture": [
+    "Architectural Assistantship",
+    "Fashion Technology"
+  ],
+  "Aero & Auto": [
+    "Aeronautical Engineering",
+    "Automobile Engineering"
+  ],
+  "Mining & Metallurgy": [
+    "Mining Engineering",
+    "Metallurgy and Material Technology"
+  ],
+  "Printing & Packaging": [
+    "Printing and Packing Technology",
+    "Paper and Pulp Technology"
+  ],
+  "Safety & Fire": [
+    "Fire Engineering",
+    "Safety and Fire Engineering"
+  ],
+  "5G & Miscellaneous": [
+    "5G",
+    "Dyestuff Technology",
+    "Agricultural Engineering"
+  ]
+};
 
-      collegeDivs.forEach(college => {
-        const text = college.textContent.toLowerCase();
-        college.style.display = text.includes(keyword) ? "block" : "none";
-      });
-    }
 
-    let collegeData = {};
 
-    const categoryMap = {
-      "OPEN": ["GOPENS", "LOPENS", "GOPENH", "LOPENH", "GOPENO", "LOPENO", "PWDOPENS", "PWDOPENH"],
-      "OBC": ["GOBCS", "LOBCS", "GOBCH", "LOBCH", "GOBCO", "LOBCO", "PWDOBCS", "PWDOBCH", "PWDROBCS", "DEFROBCS", "DEFOBCS"],
-      "SC": ["GSCS", "LSCS", "GSCH", "LSCH", "PWDSCS", "DEFSCS", "DEFRSCS", "PWDRSCS"],
-      "ST": ["GSTS", "LSTS", "GSTH", "LSTH", "GSTO", "LSTO", "PWDRSTS"],
-      "VJ": ["GVJS", "LVJS", "GVJH", "LVJH", "GVJO", "LVJO"],
-      "NT1": ["GNT1S", "LNT1S", "GNT1H", "LNT1H", "GNT1O", "LNT1O", "DEFRNT1S"],
-      "NT2": ["GNT2S", "LNT2S", "GNT2H", "LNT2H", "GNT2O", "LNT2O", "DEFRNT2S", "PWDRNT2S"],
-      "NT3": ["GNT3S", "LNT3S", "GNT3H", "LNT3H", "GNT3O", "LNT3O"],
-      "SEBC": ["GSEBCS", "LSEBCS", "GSEBCH", "LSEBCH", "GSEBCO", "LSEBCO", "DEFSEBCS"],
-      "EWS": ["EWS"],
-      "PWD": ["PWDOPENS", "PWDOPENH", "PWDSCS", "PWDOBCS", "PWDOBCH", "PWDRSCS", "PWDRSTS", "PWDRNT2S"],
-      "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFROBCS", "DEFSEBCS", "DEFRNT1S", "DEFRSCS", "DEFRNT2S"],
-      "TFWS": ["TFWS"],
-      "ORPHAN": ["ORPHAN"],
-      "MI": ["MI"]
-    };
+function populateMainBranchOptions() {
+  const mainBranchGroup = document.getElementById("mainBranchGroup");
+  for (const group in branchMap) {
+    const opt = document.createElement("option");
+    opt.value = group;
+    opt.innerText = group;
+    mainBranchGroup.appendChild(opt);
+  }
+}
 
-    fetch("data.json")
-      .then(res => res.json())
-      .then(json => {
-        collegeData = json;
-      })
-      .catch(err => {
-        document.getElementById("results").innerText = "Error loading data.";
-        console.error("Failed to load data.json", err);
-      });
+function togglePercentileMode() {
+  const mode = document.getElementById("percentileMode").value;
+  document.getElementById("percentileSingle").style.display = mode === "simple" ? "block" : "none";
+  document.getElementById("percentileRange").style.display = mode === "range" ? "block" : "none";
+}
 
-    function recommend() {
-      const percentile = parseFloat(document.getElementById("percentile").value);
-      const selectedGroup = document.getElementById("category").value;
-      const viewMode = document.getElementById("viewMode").value;
-      const validCategories = categoryMap[selectedGroup] || [];
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "";
+function liveSearchResults() {
+  const keyword = document.getElementById("liveSearch").value.toLowerCase();
+  const collegeDivs = document.querySelectorAll(".college");
+  collegeDivs.forEach(college => {
+    const text = college.textContent.toLowerCase();
+    college.style.display = text.includes(keyword) ? "block" : "none";
+  });
+}
 
-      if (!collegeData || Object.keys(collegeData).length === 0) {
-        resultsDiv.innerText = "Data is still loading...";
-        return;
-      }
+const categoryMap = {
+  "OPEN": ["GOPENS", "LOPENS", "GOPENH", "LOPENH", "GOPENO", "LOPENO"],
+  "OBC": ["GOBCS", "LOBCS", "GOBCH", "LOBCH", "GOBCO", "LOBCO"],
+  "SC": ["GSCS", "LSCS", "GSCH", "LSCH"],
+  "ST": ["GSTS", "LSTS", "GSTH", "LSTH", "GSTO", "LSTO"],
+  "VJ": ["GVJS", "LVJS", "GVJH", "LVJH", "GVJO", "LVJO"],
+  "NT1": ["GNT1S", "LNT1S", "GNT1H", "LNT1H", "GNT1O", "LNT1O"],
+  "NT2": ["GNT2S", "LNT2S", "GNT2H", "LNT2H", "GNT2O", "LNT2O"],
+  "NT3": ["GNT3S", "LNT3S", "GNT3H", "LNT3H", "GNT3O", "LNT3O"],
+  "SEBC": ["GSEBCS", "LSEBCS", "GSEBCH", "LSEBCH", "GSEBCO", "LSEBCO"],
+  "EWS": ["EWS"],
+  "PWD": ["PWDOPENS", "PWDSCS", "PWDOBCH", "PWDRSCS", "PWDRSTS"],
+  "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFRNT1S", "DEFRSCS"],
+  "TFWS": ["TFWS"],
+  "ORPHAN": ["ORPHAN"],
+  "MI": ["MI"]
+};
 
-      const matchingData = [];
+let collegeData = {};
+fetch("data.json")
+  .then(res => res.json())
+  .then(json => { collegeData = json; })
+  .catch(err => {
+    document.getElementById("results").innerText = "Error loading data.";
+    console.error("Failed to load data.json", err);
+  });
 
-      for (const [collegeName, details] of Object.entries(collegeData)) {
-        for (const branch of details.branches) {
-          for (const cutoff of branch.cutoffs || []) {
-            if (
-              validCategories.includes(cutoff.category) &&
-              cutoff.percentile >= percentile - 3 &&
-              cutoff.percentile <= percentile + 1
-            ) {
-              matchingData.push({
-                collegeName,
-                branchName: branch.branch,
-                category: cutoff.category,
-                cutoffPercentile: cutoff.percentile
-              });
-            }
-          }
-        }
-      }
+function recommend() {
+  const mode = document.getElementById("percentileMode").value;
+  const gender = document.getElementById("gender").value;
+  const selectedGroup = document.getElementById("category").value.toUpperCase();
+  const viewMode = document.getElementById("viewMode").value;
+  const branchGroup = document.getElementById("mainBranchGroup").value;
 
-      matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
+let minP, maxP;
+if (mode === "simple") {
+  const p = parseFloat(document.getElementById("percentile").value);
+  if (isNaN(p)) return alert("Enter a valid percentile.");
+  if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
+  minP = p - 3;
+  maxP = p + 1;
+} else {
+  minP = parseFloat(document.getElementById("lowerPercentile").value);
+  maxP = parseFloat(document.getElementById("upperPercentile").value);
+  if (isNaN(minP) || isNaN(maxP)) return alert("Enter both lower and upper percentiles.");
+  if (minP < 0 || maxP > 100) return alert("Percentiles must be between 0 and 100.");
+  if (maxP <= minP) return alert("Upper percentile must be greater than lower percentile.");
+}
 
-      if (viewMode === "flat") {
-        matchingData.forEach((entry, index) => {
-          const entryEl = document.createElement("div");
-          entryEl.className = "college";
-          entryEl.innerHTML = `
-            <h3 class="college-name">${index + 1}) ${entry.collegeName}</h3>
-            <div class="branch">
-              <span class="branch-name">${entry.branchName}</span><br/>
-              Caste: <b>${entry.category}</b><br/>
-              Required: ${entry.cutoffPercentile} | Your: ${percentile}
-            </div>
-          `;
-          resultsDiv.appendChild(entryEl);
-        });
-      } else {
-        const grouped = {};
-        matchingData.forEach(entry => {
-          if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
-          grouped[entry.collegeName].push(entry);
-        });
 
-        let i = 1;
-        for (const [collegeName, branches] of Object.entries(grouped)) {
-          const collegeEl = document.createElement("div");
-          collegeEl.className = "college";
-          collegeEl.innerHTML = `<h3 class="college-name">${i++}) ${collegeName}</h3>`;
-          branches.forEach(b => {
-            collegeEl.innerHTML += `
-              <div class="branch">
-                <span class="branch-name">${b.branchName}</span><br/>
-                Caste: <b>${b.category}</b><br/>
-                Required: ${b.cutoffPercentile} | Your: ${percentile}
-              </div>
-            `;
+  const validCategories = categoryMap[selectedGroup] || [];
+  const filteredCategories = gender === "male"
+    ? validCategories.filter(cat => !cat.startsWith("L"))
+    : validCategories;
+
+  const resultsDiv = document.getElementById("results");
+  const countDiv = document.getElementById("results-count");
+  resultsDiv.innerHTML = "";
+  countDiv.innerHTML = "";
+
+  const matchingData = [];
+  for (const [collegeName, details] of Object.entries(collegeData)) {
+    for (const branch of details.branches || []) {
+      if (branchGroup && !branchMap[branchGroup]?.includes(branch.branch)) continue;
+
+      for (const cutoff of branch.cutoffs || []) {
+        if (
+          filteredCategories.includes(cutoff.category) &&
+          cutoff.percentile >= minP &&
+          cutoff.percentile <= maxP
+        ) {
+          matchingData.push({
+            collegeName,
+            branchName: branch.branch,
+            category: cutoff.category,
+            cutoffPercentile: cutoff.percentile
           });
-          resultsDiv.appendChild(collegeEl);
         }
       }
     }
+  }
 
-document.addEventListener('DOMContentLoaded', function() {
-  // Prevent any desktop-style overrides
-  document.body.classList.add('mobile-rendering');
-  
-  // Force mobile viewport
-  const viewportMeta = document.createElement('meta');
-  viewportMeta.name = 'viewport';
-  viewportMeta.content = 'width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no';
-  document.head.appendChild(viewportMeta);
-});
+  matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
+  const userP = mode === "simple" ? (minP + 3) : minP;
+  const formatUserInfo = () => mode === "simple"
+    ? `Your: ${userP.toFixed(2)}`
+    : `Your Range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
 
+  countDiv.innerText = `${matchingData.length} options found`;
 
-  </script>
+  if (viewMode === "flat") {
+    matchingData.forEach((entry, index) => {
+      const color = userP >= entry.cutoffPercentile ? "green" : "red";
+      const entryEl = document.createElement("div");
+      entryEl.className = "college";
+      entryEl.innerHTML = `
+        <h3 class="college-name">${index + 1}) ${entry.collegeName}</h3>
+        <div class="branch">
+          <span class="branch-name">${entry.branchName}</span><br/>
+          Caste: <b>${entry.category}</b><br/>
+          Required: <span style="color:${color}">${entry.cutoffPercentile}</span> | ${formatUserInfo()}
+        </div>
+      `;
+      resultsDiv.appendChild(entryEl);
+    });
+  } else {
+    const grouped = {};
+    matchingData.forEach(entry => {
+      if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
+      grouped[entry.collegeName].push(entry);
+    });
+
+    let i = 1;
+    for (const [collegeName, branches] of Object.entries(grouped)) {
+      const collegeEl = document.createElement("div");
+      collegeEl.className = "college";
+      collegeEl.innerHTML = `<h3 class="college-name">${i++}) ${collegeName}</h3>`;
+      branches.forEach(b => {
+        const color = userP >= b.cutoffPercentile ? "green" : "red";
+        collegeEl.innerHTML += `
+          <div class="branch">
+            <span class="branch-name">${b.branchName}</span><br/>
+            Caste: <b>${b.category}</b><br/>
+            Required: <span style="color:${color}">${b.cutoffPercentile}</span> | ${formatUserInfo()}
+          </div>
+        `;
+      });
+      resultsDiv.appendChild(collegeEl);
+    }
+  }
+}
+
+populateMainBranchOptions();
+</script>
 </body>
 </html>
