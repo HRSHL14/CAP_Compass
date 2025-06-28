@@ -298,8 +298,8 @@ if (mode === "simple") {
   const p = parseFloat(document.getElementById("percentile").value);
   if (isNaN(p)) return alert("Enter a valid percentile.");
   if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
-  minP = p - 3;
-  maxP = p + 1;
+  minP = p - 5;
+  maxP = p + 3;
 } else {
   minP = parseFloat(document.getElementById("lowerPercentile").value);
   maxP = parseFloat(document.getElementById("upperPercentile").value);
