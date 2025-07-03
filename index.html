@@ -4,397 +4,941 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CAP_Compass</title>
-  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
-  <h1><i class="fas fa-compass"></i> CAP_Compass</h1>
-  <h4>Based on CAP Round I (2024)</h4>
+  <style>
+    /* Modern CSS Reset */
+    :root {
+  --primary: #4cc9f0;
+  --primary-dark: #3a56d4;
+  --secondary: #4895ef;
+  --light: #f8f9fa;
+  --dark: #ffffff;
+  --success: #00ff9f;
+  --danger: #f72585;
+  --warning: #f8961e;
+  --info: #56cfe1;
+  --background: #000000;
+  --surface: #121212;
+  --border-radius: 8px;
+  --shadow: 0 4px 6px rgba(255, 255, 255, 0.05);
+  --transition: all 0.3s ease;
+}
 
-  <!-- Input Mode -->
-  <label>Search Mode:
-    <select id="percentileMode" onchange="togglePercentileMode()">
-      <option value="simple">Single Percentile</option>
-      <option value="range">Range (Lower & Upper)</option>
-    </select>
-  </label><br>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  <div id="percentileSingle">
-    <label>Percentile:
-      <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" />
-    </label><br>
-  </div>
-  <div id="percentileRange" style="display: none;">
-    <label>Lower Percentile:
-      <input type="number" id="lowerPercentile" step="0.1" placeholder="Lower bound" />
-    </label><br>
-    <label>Upper Percentile:
-      <input type="number" id="upperPercentile" step="0.1" placeholder="Upper bound" />
-    </label><br>
-  </div>
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  color: var(--dark);
+  background-color: var(--background);
+}
 
-  <!-- Category & Gender -->
-  <label>Category:
-    <select id="category">
-      <option value="OPEN">OPEN</option>
-      <option value="OBC">OBC</option>
-      <option value="SC">SC</option>
-      <option value="ST">ST</option>
-      <option value="VJ">VJ</option>
-      <option value="NT1">NT1</option>
-      <option value="NT2">NT2</option>
-      <option value="NT3">NT3</option>
-      <option value="SEBC">SEBC</option>
-      <option value="EWS">EWS</option>
-      <option value="PWD">PWD</option>
-      <option value="DEF">DEF</option>
-      <option value="TFWS">TFWS</option>
-      <option value="ORPHAN">ORPHAN</option>
-      <option value="MI">MI</option>
-    </select>
-  </label><br>
+/* Navigation */
+.navbar {
+  background-color: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-  <label>Gender:
-    <select id="gender">
-      <option value="any">Female / Any</option>
-      <option value="male">Male</option>
-    </select>
-  </label><br>
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 1.2rem;
+}
 
-  <!-- Branch Filter -->
-  <label>Main Branch Group:
-    <select id="mainBranchGroup">
-      <option value="">-- Any --</option>
-    </select>
-  </label><br>
+.nav-brand i {
+  font-size: 1.4rem;
+}
 
-  <label>Display Mode:
-    <select id="viewMode">
-      <option value="flat">Flat Ranked List</option>
-      <option value="grouped">Group by College</option>
-    </select>
-  </label><br>
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
 
-  <button onclick="recommend()">Get Recommendations</button>
-  <button onclick="document.getElementById('results').innerHTML = ''">Clear</button>
-  <br>
-  <input type="text" id="liveSearch" placeholder="Search college or branch..." oninput="liveSearchResults()" />
+.nav-link {
+  color: var(--dark);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  padding: 0.5rem 0;
+  position: relative;
+}
 
-  <p>Legends: G - General, L - Ladies, H - Home Univ, O - Other Univ, S - State Level, AI - All India</p>
+.nav-link:hover {
+  color: var(--primary);
+}
 
-  <div id="results-count"></div>
-  <div class="results" id="results"></div>
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary);
+  transition: var(--transition);
+}
 
-<script>
-const branchMap = {
-  "CS Core": [
-    "Computer Science", 
-    "Computer Science and Engineering",
-    "Computer Science and Engineering (Aided)",
-    "Computer Science and Engineering (Unaided)",
-    "Computer Engineering",
-    "Computer Engineering (Software Engineering)",
-    "Computer Science and Technology",
-    "Computer Technology",
-    "Computer Science and Information Technology"
-  ],
-  "CS with Specs": [
-    "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
-    "Computer Science and Engineering(Artificial Intelligence and Machine Learning)",
-    "Computer Science and Engineering (Artificial Intelligence and Data Science)",
-    "Computer Science and Engineering (Artificial Intelligence)",
-    "Computer Science and Engineering (Cyber Security)",
-    "Computer Science and Engineering(Cyber Security)",
-    "Computer Science and Engineering(Data Science)",
-    "Computer Science and Engineering (Internet of Things and Cyber Security Including Block Chain",
-    "Computer Science and Engineering (IoT)",
-    "Computer Science and Business Systems",
-    "Computer Science and Design",
-    "Artificial Intelligence",
-    "Artificial Intelligence (AI) and Data Science",
-    "Artificial Intelligence and Data Science",
-    "Artificial Intelligence and Machine Learning",
-    "Artificial Intelligence and Machine Learning (Un-Aided)",
-    "Cyber Security",
-    "Data Engineering",
-    "Data Science"
-  ],
-  "IT": [
-    "Information Technology",
-    "Information Technology (Aided)",
-    "Information Technology (Unaided)"
-  ],
-  "Mechanical": [
-    "Mechanical Engineering", 
-    "Mechanical Engineering (Aided)", 
-    "Mechanical Engineering Automobile",
-    "Mechanical Engineering[Sandwich]", 
-    "Mechanical & Automation Engineering", 
-    "Mechanical and Mechatronics Engineering (Additive Manufacturing)",
-    "Mechatronics Engineering"
-  ],
-  "Electrical": [
-    "Electrical Engineering", 
-    "Electrical Engineering (Aided)", 
-    "Electrical Engg[Electronics and Power]",
-    "Electrical and Computer Engineering", 
-    "Electrical and Electronics Engineering", 
-    "Electrical, Electronics and Power"
-  ],
-  "Electronics & Communication": [
-    "Electronics Engineering", 
-    "Electronics Engineering ( VLSI Design and Technology)",
-    "Electronics Engineering (Aided)", 
-    "Electronics and Biomedical Engineering",
-    "Electronics and Communication Engineering", 
-    "Electronics and Communication(Advanced Communication Technology)",
-    "Electronics and Communication (Advanced Communication Technology)", 
-    "Electronics and Telecommunication Engg",
-    "Electronics and Telecommunication Engineering", 
-    "Electronics and Computer Engineering",
-    "Electronics and Computer Science", 
-    "VLSI"
-  ],
-  "Civil": [
-    "Civil Engineering", 
-    "Civil Engineering (Aided)", 
-    "Civil Engineering and Planning",
-    "Civil and Environmental Engineering", 
-    "Civil and infrastructure Engineering",
-    "Structural Engineering"
-  ],
-  "Chemical": [
-    "Chemical Engineering",
-    "Pharmaceutical and Fine Chemical Technology",
-    "Pharmaceuticals Chemistry and Technology",
-    "Petro Chemical Engineering",
-    "Surface Coating Technology",
-    "Oil Fats and Waxes Technology",
-    "Oil and Paints Technology",
-    "Oil,Oleochemicals and Surfactants Technology",
-    "Paints Technology"
-  ],
-  "Textile": [
-    "Textile Chemistry",
-    "Textile Technology",
-    "Textile Engineering / Technology",
-    "Technical Textiles",
-    "Man Made Textile Technology",
-    "Fibres and Textile Processing Technology"
-  ],
-  "Production & Manufacturing": [
-    "Production Engineering",
-    "Production Engineering (Sandwich)",
-    "Manufacturing Science and Engineering"
-  ],
-  "Instrumentation & IoT": [
-    "Instrumentation Engineering",
-    "Instrumentation and Control Engineering",
-    "Internet of Things (IoT)",
-    "Industrial IoT"
-  ],
-  "Robotics & Automation": [
-    "Automation and Robotics",
-    "Robotics and Artificial Intelligence",
-    "Robotics and Automation"
-  ],
-  "Bio & Health": [
-    "Bio Medical Engineering",
-    "Bio Technology",
-    "Food Engineering and Technology",
-    "Food Technology",
-    "Food Technology And Management"
-  ],
-  "Design & Architecture": [
-    "Architectural Assistantship",
-    "Fashion Technology"
-  ],
-  "Aero & Auto": [
-    "Aeronautical Engineering",
-    "Automobile Engineering"
-  ],
-  "Mining & Metallurgy": [
-    "Mining Engineering",
-    "Metallurgy and Material Technology"
-  ],
-  "Printing & Packaging": [
-    "Printing and Packing Technology",
-    "Paper and Pulp Technology"
-  ],
-  "Safety & Fire": [
-    "Fire Engineering",
-    "Safety and Fire Engineering"
-  ],
-  "5G & Miscellaneous": [
-    "5G",
-    "Dyestuff Technology",
-    "Agricultural Engineering"
-  ]
-};
+.nav-link:hover::after {
+  width: 100%;
+}
 
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--dark);
+  cursor: pointer;
+}
 
+/* Main Content */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
 
-function populateMainBranchOptions() {
-  const mainBranchGroup = document.getElementById("mainBranchGroup");
-  for (const group in branchMap) {
-    const opt = document.createElement("option");
-    opt.value = group;
-    opt.innerText = group;
-    mainBranchGroup.appendChild(opt);
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: var(--primary);
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.header h4 {
+  color: #bbb;
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+/* Form Styles */
+.form-container {
+  background-color: var(--surface);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-col {
+  flex: 1;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #444;
+  background-color: #1f1f1f;
+  color: #eee;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+input:focus,
+select:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.2);
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+}
+
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--background);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.btn-outline:hover {
+  background-color: rgba(76, 201, 240, 0.1);
+}
+
+/* Search Box */
+.search-box {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.search-box input {
+  padding-left: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 1rem center;
+  background-size: 1rem;
+}
+
+/* Results Section */
+.results-container {
+  background-color: var(--surface);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.results-count {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.legends {
+  font-size: 0.85rem;
+  color: #aaa;
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+/* College Cards */
+.college {
+  background-color: var(--surface);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 4px rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+  border-left: 4px solid var(--primary);
+}
+
+.college:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(255, 255, 255, 0.1);
+}
+
+.college-name {
+  color: var(--dark);
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  gap: 0.5rem;
+}
+
+.college-name .badge {
+  font-size: 0.75rem;
+  background-color: var(--primary);
+  color: var(--background);
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+  margin-right: auto;
+}
+
+.branch {
+  background-color: #1c1c1c;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.branch-name {
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.branch-details {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.branch-details strong {
+  color: var(--dark);
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .container {
+    padding: 1.5rem;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 0;
   }
 }
 
-function togglePercentileMode() {
-  const mode = document.getElementById("percentileMode").value;
-  document.getElementById("percentileSingle").style.display = mode === "simple" ? "block" : "none";
-  document.getElementById("percentileRange").style.display = mode === "range" ? "block" : "none";
+@media (max-width: 768px) {
+  .navbar {
+    padding: 1rem;
+  }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: var(--surface);
+    flex-direction: column;
+    gap: 0;
+    padding: 1rem 0;
+    box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
+  }
+  .nav-links.active {
+    display: flex;
+  }
+  .nav-link {
+    padding: 0.75rem 2rem;
+  }
+  .mobile-menu-btn {
+    display: block;
+  }
+  .form-container,
+  .results-container {
+    padding: 1.5rem;
+  }
+  .btn-group {
+    flex-direction: column;
+  }
+  .btn {
+    width: 100%;
+  }
 }
 
-function liveSearchResults() {
-  const keyword = document.getElementById("liveSearch").value.toLowerCase();
-  const collegeDivs = document.querySelectorAll(".college");
-  collegeDivs.forEach(college => {
-    const text = college.textContent.toLowerCase();
-    college.style.display = text.includes(keyword) ? "block" : "none";
-  });
+@media (max-width: 576px) {
+  .header h1 {
+    font-size: 1.8rem;
+  }
+  .container {
+    padding: 1rem;
+  }
+  .form-container,
+  .results-container {
+    padding: 1rem;
+  }
 }
 
-const categoryMap = {
-  "OPEN": ["GOPENS", "LOPENS", "GOPENH", "LOPENH", "GOPENO", "LOPENO"],
-  "OBC": ["GOBCS", "LOBCS", "GOBCH", "LOBCH", "GOBCO", "LOBCO"],
-  "SC": ["GSCS", "LSCS", "GSCH", "LSCH"],
-  "ST": ["GSTS", "LSTS", "GSTH", "LSTH", "GSTO", "LSTO"],
-  "VJ": ["GVJS", "LVJS", "GVJH", "LVJH", "GVJO", "LVJO"],
-  "NT1": ["GNT1S", "LNT1S", "GNT1H", "LNT1H", "GNT1O", "LNT1O"],
-  "NT2": ["GNT2S", "LNT2S", "GNT2H", "LNT2H", "GNT2O", "LNT2O"],
-  "NT3": ["GNT3S", "LNT3S", "GNT3H", "LNT3H", "GNT3O", "LNT3O"],
-  "SEBC": ["GSEBCS", "LSEBCS", "GSEBCH", "LSEBCH", "GSEBCO", "LSEBCO"],
-  "EWS": ["EWS"],
-  "PWD": ["PWDOPENS", "PWDSCS", "PWDOBCH", "PWDRSCS", "PWDRSTS"],
-  "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFRNT1S", "DEFRSCS"],
-  "TFWS": ["TFWS"],
-  "ORPHAN": ["ORPHAN"],
-  "MI": ["MI"]
-};
-
-let collegeData = {};
-fetch("data.json")
-  .then(res => res.json())
-  .then(json => { collegeData = json; })
-  .catch(err => {
-    document.getElementById("results").innerText = "Error loading data.";
-    console.error("Failed to load data.json", err);
-  });
-
-function recommend() {
-  const mode = document.getElementById("percentileMode").value;
-  const gender = document.getElementById("gender").value;
-  const selectedGroup = document.getElementById("category").value.toUpperCase();
-  const viewMode = document.getElementById("viewMode").value;
-  const branchGroup = document.getElementById("mainBranchGroup").value;
-
-let minP, maxP;
-if (mode === "simple") {
-  const p = parseFloat(document.getElementById("percentile").value);
-  if (isNaN(p)) return alert("Enter a valid percentile.");
-  if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
-  minP = p - 5;
-  maxP = p + 3;
-} else {
-  minP = parseFloat(document.getElementById("lowerPercentile").value);
-  maxP = parseFloat(document.getElementById("upperPercentile").value);
-  if (isNaN(minP) || isNaN(maxP)) return alert("Enter both lower and upper percentiles.");
-  if (minP < 0 || maxP > 100) return alert("Percentiles must be between 0 and 100.");
-  if (maxP <= minP) return alert("Upper percentile must be greater than lower percentile.");
+/* Utility */
+.text-success {
+  color: #00ff9f;
 }
 
+.text-danger {
+  color: #ff6b6b;
+}
 
-  const validCategories = categoryMap[selectedGroup] || [];
-  const filteredCategories = gender === "male"
-    ? validCategories.filter(cat => !cat.startsWith("L"))
-    : validCategories;
+.text-muted {
+  color: #aaa;
+}
 
-  const resultsDiv = document.getElementById("results");
-  const countDiv = document.getElementById("results-count");
-  resultsDiv.innerHTML = "";
-  countDiv.innerHTML = "";
+.mb-3 {
+  margin-bottom: 1rem;
+}
 
-  const matchingData = [];
-  for (const [collegeName, details] of Object.entries(collegeData)) {
-    for (const branch of details.branches || []) {
-      if (branchGroup && !branchMap[branchGroup]?.includes(branch.branch)) continue;
+.mt-3 {
+  margin-top: 1rem;
+}
 
-      for (const cutoff of branch.cutoffs || []) {
-        if (
-          filteredCategories.includes(cutoff.category) &&
-          cutoff.percentile >= minP &&
-          cutoff.percentile <= maxP
-        ) {
-          matchingData.push({
-            collegeName,
-            branchName: branch.branch,
-            category: cutoff.category,
-            cutoffPercentile: cutoff.percentile
+.d-none {
+  display: none;
+}
+
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-brand">
+      <i class="fas fa-compass"></i>
+      <span>CAP_Compass</span>
+    </a>
+    
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <i class="fas fa-bars"></i>
+    </button>
+    
+    <div class="nav-links" id="navLinks">
+      <a href="#" class="nav-link active">Home</a>
+      <a href="fee.html" class="nav-link">College Fee</a>
+      <!-- <a href="#" class="nav-link">Branches</a>
+      <a href="#" class="nav-link">Cutoffs</a> -->
+      <a href="fb.html" class="nav-link">Feedback</a>
+    </div>
+  </nav>
+  
+  <!-- Main Content -->
+  <div class="container">
+    <header class="header">
+      <h4>Based on CAP Round I (2024)</h4>
+    </header>
+    
+    <!-- Form Section -->
+    <div class="form-container">
+      <div class="form-group">
+        <label>Search Mode:</label>
+        <select id="percentileMode" class="form-control" onchange="togglePercentileMode()">
+          <option value="simple">Single Percentile</option>
+          <option value="range">Range (Lower & Upper)</option>
+        </select>
+      </div>
+      
+      <div id="percentileSingle">
+        <div class="form-group">
+          <label>Percentile:</label>
+          <input type="number" id="percentile" step="0.1" placeholder="Enter your percentile" class="form-control" />
+        </div>
+      </div>
+      
+      <div id="percentileRange" class="d-none">
+        <div class="form-row">
+          <div class="form-col">
+            <label>Lower Percentile:</label>
+            <input type="number" id="lowerPercentile" step="0.1" placeholder="Lower bound" class="form-control" />
+          </div>
+          <div class="form-col">
+            <label>Upper Percentile:</label>
+            <input type="number" id="upperPercentile" step="0.1" placeholder="Upper bound" class="form-control" />
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-col">
+          <label>Category:</label>
+          <select id="category" class="form-control">
+            <option value="OPEN">OPEN</option>
+            <option value="OBC">OBC</option>
+            <option value="SC">SC</option>
+            <option value="ST">ST</option>
+            <option value="VJ">VJ</option>
+            <option value="NT1">NT1</option>
+            <option value="NT2">NT2</option>
+            <option value="NT3">NT3</option>
+            <option value="SEBC">SEBC</option>
+            <option value="EWS">EWS</option>
+            <option value="PWD">PWD</option>
+            <option value="DEF">DEF</option>
+            <option value="TFWS">TFWS</option>
+            <option value="ORPHAN">ORPHAN</option>
+            <option value="MI">MI</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label>Gender:</label>
+          <select id="gender" class="form-control">
+            <option value="any">Female / Any</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Main Branch Group:</label>
+        <select id="mainBranchGroup" class="form-control">
+          <option value="">-- Any --</option>
+          <!-- Options will be populated by JavaScript -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Display Mode:</label>
+        <select id="viewMode" class="form-control">
+          <option value="flat">Flat Ranked List</option>
+          <option value="grouped">Group by College</option>
+        </select>
+      </div>
+      
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="recommend()">
+          <i class="fas fa-search"></i> Get Recommendations
+        </button>
+        <button class="btn btn-outline" onclick="clearResults()">
+          <i class="fas fa-trash-alt"></i> Clear
+        </button>
+      </div>
+    </div>
+    
+    <!-- Search Box -->
+    <div class="search-box">
+      <input type="text" id="liveSearch" class="form-control" placeholder="Search college or branch..." oninput="liveSearchResults()" />
+    </div>
+    
+    <!-- Results Section -->
+    <div class="results-container">
+      <div class="results-header">
+        <div class="results-count" id="results-count">0 options found</div>
+      </div>
+      
+      <div class="results" id="results">
+        <!-- Results will be displayed here -->
+      </div>
+      
+      <p class="legends">
+        Legends: G - General, L - Ladies, H - Home Univ, O - Other Univ, S - State Level, AI - All India
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Branch mapping data
+    const branchMap = {
+      "CS Core": [
+        "Computer Science", 
+        "Computer Science and Engineering",
+        "Computer Science and Engineering (Aided)",
+        "Computer Science and Engineering (Unaided)",
+        "Computer Engineering",
+        "Computer Engineering (Software Engineering)",
+        "Computer Science and Technology",
+        "Computer Technology",
+        "Computer Science and Information Technology"
+      ],
+      "CS with Specs": [
+        "Computer Science and Engineering (Artificial Intelligence and Machine Learning)",
+        "Computer Science and Engineering(Artificial Intelligence and Machine Learning)",
+        "Computer Science and Engineering (Artificial Intelligence and Data Science)",
+        "Computer Science and Engineering (Artificial Intelligence)",
+        "Computer Science and Engineering (Cyber Security)",
+        "Computer Science and Engineering(Cyber Security)",
+        "Computer Science and Engineering(Data Science)",
+        "Computer Science and Engineering (Internet of Things and Cyber Security Including Block Chain",
+        "Computer Science and Engineering (IoT)",
+        "Computer Science and Business Systems",
+        "Computer Science and Design",
+        "Artificial Intelligence",
+        "Artificial Intelligence (AI) and Data Science",
+        "Artificial Intelligence and Data Science",
+        "Artificial Intelligence and Machine Learning",
+        "Artificial Intelligence and Machine Learning (Un-Aided)",
+        "Cyber Security",
+        "Data Engineering",
+        "Data Science"
+      ],
+      "IT": [
+        "Information Technology",
+        "Information Technology (Aided)",
+        "Information Technology (Unaided)"
+      ],
+      "Mechanical": [
+        "Mechanical Engineering", 
+        "Mechanical Engineering (Aided)", 
+        "Mechanical Engineering Automobile",
+        "Mechanical Engineering[Sandwich]", 
+        "Mechanical & Automation Engineering", 
+        "Mechanical and Mechatronics Engineering (Additive Manufacturing)",
+        "Mechatronics Engineering"
+      ],
+      "Electrical": [
+        "Electrical Engineering", 
+        "Electrical Engineering (Aided)", 
+        "Electrical Engg[Electronics and Power]",
+        "Electrical and Computer Engineering", 
+        "Electrical and Electronics Engineering", 
+        "Electrical, Electronics and Power"
+      ],
+      "Electronics & Communication": [
+        "Electronics Engineering", 
+        "Electronics Engineering ( VLSI Design and Technology)",
+        "Electronics Engineering (Aided)", 
+        "Electronics and Biomedical Engineering",
+        "Electronics and Communication Engineering", 
+        "Electronics and Communication(Advanced Communication Technology)",
+        "Electronics and Communication (Advanced Communication Technology)", 
+        "Electronics and Telecommunication Engg",
+        "Electronics and Telecommunication Engineering", 
+        "Electronics and Computer Engineering",
+        "Electronics and Computer Science", 
+        "VLSI"
+      ],
+      "Civil": [
+        "Civil Engineering", 
+        "Civil Engineering (Aided)", 
+        "Civil Engineering and Planning",
+        "Civil and Environmental Engineering", 
+        "Civil and infrastructure Engineering",
+        "Structural Engineering"
+      ],
+      "Chemical": [
+        "Chemical Engineering",
+        "Pharmaceutical and Fine Chemical Technology",
+        "Pharmaceuticals Chemistry and Technology",
+        "Petro Chemical Engineering",
+        "Surface Coating Technology",
+        "Oil Fats and Waxes Technology",
+        "Oil and Paints Technology",
+        "Oil,Oleochemicals and Surfactants Technology",
+        "Paints Technology"
+      ],
+      "Textile": [
+        "Textile Chemistry",
+        "Textile Technology",
+        "Textile Engineering / Technology",
+        "Technical Textiles",
+        "Man Made Textile Technology",
+        "Fibres and Textile Processing Technology"
+      ],
+      "Production & Manufacturing": [
+        "Production Engineering",
+        "Production Engineering (Sandwich)",
+        "Manufacturing Science and Engineering"
+      ],
+      "Instrumentation & IoT": [
+        "Instrumentation Engineering",
+        "Instrumentation and Control Engineering",
+        "Internet of Things (IoT)",
+        "Industrial IoT"
+      ],
+      "Robotics & Automation": [
+        "Automation and Robotics",
+        "Robotics and Artificial Intelligence",
+        "Robotics and Automation"
+      ],
+      "Bio & Health": [
+        "Bio Medical Engineering",
+        "Bio Technology",
+        "Food Engineering and Technology",
+        "Food Technology",
+        "Food Technology And Management"
+      ],
+      "Design & Architecture": [
+        "Architectural Assistantship",
+        "Fashion Technology"
+      ],
+      "Aero & Auto": [
+        "Aeronautical Engineering",
+        "Automobile Engineering"
+      ],
+      "Mining & Metallurgy": [
+        "Mining Engineering",
+        "Metallurgy and Material Technology"
+      ],
+      "Printing & Packaging": [
+        "Printing and Packing Technology",
+        "Paper and Pulp Technology"
+      ],
+      "Safety & Fire": [
+        "Fire Engineering",
+        "Safety and Fire Engineering"
+      ],
+      "5G & Miscellaneous": [
+        "5G",
+        "Dyestuff Technology",
+        "Agricultural Engineering"
+      ]
+    };
+
+    // Category mapping
+    const categoryMap = {
+      "OPEN": ["GOPENS", "LOPENS", "GOPENH", "LOPENH", "GOPENO", "LOPENO"],
+      "OBC": ["GOBCS", "LOBCS", "GOBCH", "LOBCH", "GOBCO", "LOBCO"],
+      "SC": ["GSCS", "LSCS", "GSCH", "LSCH"],
+      "ST": ["GSTS", "LSTS", "GSTH", "LSTH", "GSTO", "LSTO"],
+      "VJ": ["GVJS", "LVJS", "GVJH", "LVJH", "GVJO", "LVJO"],
+      "NT1": ["GNT1S", "LNT1S", "GNT1H", "LNT1H", "GNT1O", "LNT1O"],
+      "NT2": ["GNT2S", "LNT2S", "GNT2H", "LNT2H", "GNT2O", "LNT2O"],
+      "NT3": ["GNT3S", "LNT3S", "GNT3H", "LNT3H", "GNT3O", "LNT3O"],
+      "SEBC": ["GSEBCS", "LSEBCS", "GSEBCH", "LSEBCH", "GSEBCO", "LSEBCO"],
+      "EWS": ["EWS"],
+      "PWD": ["PWDOPENS", "PWDSCS", "PWDOBCH", "PWDRSCS", "PWDRSTS"],
+      "DEF": ["DEFOPENS", "DEFOBCS", "DEFSCS", "DEFRNT1S", "DEFRSCS"],
+      "TFWS": ["TFWS"],
+      "ORPHAN": ["ORPHAN"],
+      "MI": ["MI"]
+    };
+
+    // College data (will be loaded from JSON)
+    let collegeData = {};
+
+    // DOM Ready
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize the app
+      populateMainBranchOptions();
+      setupMobileMenu();
+      
+      // Load college data
+      fetchCollegeData();
+    });
+
+    // Populate branch options
+    function populateMainBranchOptions() {
+      const mainBranchGroup = document.getElementById("mainBranchGroup");
+      for (const group in branchMap) {
+        const opt = document.createElement("option");
+        opt.value = group;
+        opt.innerText = group;
+        mainBranchGroup.appendChild(opt);
+      }
+    }
+
+    // Toggle percentile input mode
+    function togglePercentileMode() {
+      const mode = document.getElementById("percentileMode").value;
+      document.getElementById("percentileSingle").classList.toggle("d-none", mode !== "simple");
+      document.getElementById("percentileRange").classList.toggle("d-none", mode !== "range");
+    }
+
+    // Live search results
+    function liveSearchResults() {
+      const keyword = document.getElementById("liveSearch").value.toLowerCase();
+      const collegeDivs = document.querySelectorAll(".college");
+      collegeDivs.forEach(college => {
+        const text = college.textContent.toLowerCase();
+        college.style.display = text.includes(keyword) ? "block" : "none";
+      });
+    }
+
+    // Fetch college data
+    function fetchCollegeData() {
+      fetch("data.json")
+        .then(res => res.json())
+        .then(json => { 
+          collegeData = json; 
+          console.log("College data loaded successfully");
+        })
+        .catch(err => {
+          document.getElementById("results").innerHTML = `
+            <div class="alert alert-danger">
+              Error loading college data. Please try again later.
+            </div>
+          `;
+          console.error("Failed to load data.json", err);
+        });
+    }
+
+    // Clear results
+    function clearResults() {
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("results-count").innerText = "0 options found";
+      document.getElementById("liveSearch").value = "";
+    }
+
+    // Main recommendation function
+    function recommend() {
+      const mode = document.getElementById("percentileMode").value;
+      const gender = document.getElementById("gender").value;
+      const selectedGroup = document.getElementById("category").value.toUpperCase();
+      const viewMode = document.getElementById("viewMode").value;
+      const branchGroup = document.getElementById("mainBranchGroup").value;
+
+      // Validate percentile input
+      let minP, maxP;
+      if (mode === "simple") {
+        const p = parseFloat(document.getElementById("percentile").value);
+        if (isNaN(p)) return alert("Please enter a valid percentile.");
+        if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
+        minP = p - 5;
+        maxP = p + 3;
+      } else {
+        minP = parseFloat(document.getElementById("lowerPercentile").value);
+        maxP = parseFloat(document.getElementById("upperPercentile").value);
+        if (isNaN(minP) || isNaN(maxP)) return alert("Please enter both lower and upper percentiles.");
+        if (minP < 0 || maxP > 100) return alert("Percentiles must be between 0 and 100.");
+        if (maxP <= minP) return alert("Upper percentile must be greater than lower percentile.");
+      }
+
+      const validCategories = categoryMap[selectedGroup] || [];
+      const filteredCategories = gender === "male"
+        ? validCategories.filter(cat => !cat.startsWith("L"))
+        : validCategories;
+
+      const resultsDiv = document.getElementById("results");
+      const countDiv = document.getElementById("results-count");
+      resultsDiv.innerHTML = "";
+      countDiv.innerHTML = "";
+
+      const matchingData = [];
+      for (const [collegeName, details] of Object.entries(collegeData)) {
+        for (const branch of details.branches || []) {
+          if (branchGroup && !branchMap[branchGroup]?.includes(branch.branch)) continue;
+
+          for (const cutoff of branch.cutoffs || []) {
+            if (
+              filteredCategories.includes(cutoff.category) &&
+              cutoff.percentile >= minP &&
+              cutoff.percentile <= maxP
+            ) {
+              matchingData.push({
+                collegeName,
+                branchName: branch.branch,
+                category: cutoff.category,
+                cutoffPercentile: cutoff.percentile
+              });
+            }
+          }
+        }
+      }
+
+      // Sort by cutoff percentile (descending)
+      matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
+      
+      const userP = mode === "simple"
+        ? parseFloat(document.getElementById("percentile").value)
+        : minP;
+      
+      const formatUserInfo = () => mode === "simple"
+        ? `Your percentile: ${userP.toFixed(2)}`
+        : `Your range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
+
+      countDiv.innerText = `${matchingData.length} options found`;
+
+      if (matchingData.length === 0) {
+        resultsDiv.innerHTML = `
+          <div class="alert alert-info">
+            No colleges found matching your criteria. Try adjusting your percentile range.
+          </div>
+        `;
+        return;
+      }
+
+      if (viewMode === "flat") {
+        matchingData.forEach((entry, index) => {
+          const color = userP >= entry.cutoffPercentile ? "text-success" : "text-danger";
+          const entryEl = document.createElement("div");
+          entryEl.className = "college";
+          entryEl.innerHTML = `
+            <h3 class="college-name">
+              ${index + 1}) ${entry.collegeName}
+              <span class="badge">${entry.category}</span>
+            </h3>
+            <div class="branch">
+              <span class="branch-name">${entry.branchName}</span>
+              <div class="branch-details">
+                Required percentile: <span class="${color}"><b>${entry.cutoffPercentile.toFixed(2)}</b></span><br/>
+                ${formatUserInfo()}
+              </div>
+            </div>
+          `;
+          resultsDiv.appendChild(entryEl);
+        });
+      } else {
+        const grouped = {};
+        matchingData.forEach(entry => {
+          if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
+          grouped[entry.collegeName].push(entry);
+        });
+
+        let i = 1;
+        for (const [collegeName, branches] of Object.entries(grouped)) {
+          const collegeEl = document.createElement("div");
+          collegeEl.className = "college";
+          collegeEl.innerHTML = `
+            <h3 class="college-name">
+              ${i++}) ${collegeName}
+              <span class="badge">${branches[0].category}</span>
+            </h3>
+          `;
+          
+          branches.forEach(b => {
+            const color = userP >= b.cutoffPercentile ? "text-success" : "text-danger";
+            collegeEl.innerHTML += `
+              <div class="branch">
+                <span class="branch-name">${b.branchName}</span>
+                <div class="branch-details">
+                  Required percentile: <span class="${color}"><b>${b.cutoffPercentile.toFixed(2)}</b></span><br/>
+                  ${formatUserInfo()}
+                </div>
+              </div>
+            `;
           });
+          resultsDiv.appendChild(collegeEl);
         }
       }
     }
-  }
 
-  matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
-  const userP = mode === "simple"
-  ? parseFloat(document.getElementById("percentile").value)
-  : minP;
-
-  const formatUserInfo = () => mode === "simple"
-    ? `Your: ${userP.toFixed(2)}`
-    : `Your Range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
-
-  countDiv.innerText = `${matchingData.length} options found`;
-
-  if (viewMode === "flat") {
-    matchingData.forEach((entry, index) => {
-      const color = userP >= entry.cutoffPercentile ? "green" : "red";
-      const entryEl = document.createElement("div");
-      entryEl.className = "college";
-      entryEl.innerHTML = `
-        <h3 class="college-name">${index + 1}) ${entry.collegeName}</h3>
-        <div class="branch">
-          <span class="branch-name">${entry.branchName}</span><br/>
-          Caste: <b>${entry.category}</b><br/>
-          Required: <span style="color:${color}">${entry.cutoffPercentile}</span> | ${formatUserInfo()}
-        </div>
-      `;
-      resultsDiv.appendChild(entryEl);
-    });
-  } else {
-    const grouped = {};
-    matchingData.forEach(entry => {
-      if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
-      grouped[entry.collegeName].push(entry);
-    });
-
-    let i = 1;
-    for (const [collegeName, branches] of Object.entries(grouped)) {
-      const collegeEl = document.createElement("div");
-      collegeEl.className = "college";
-      collegeEl.innerHTML = `<h3 class="college-name">${i++}) ${collegeName}</h3>`;
-      branches.forEach(b => {
-        const color = userP >= b.cutoffPercentile ? "green" : "red";
-        collegeEl.innerHTML += `
-          <div class="branch">
-            <span class="branch-name">${b.branchName}</span><br/>
-            Caste: <b>${b.category}</b><br/>
-            Required: <span style="color:${color}">${b.cutoffPercentile}</span> | ${formatUserInfo()}
-          </div>
-        `;
+    // Mobile menu toggle
+    function setupMobileMenu() {
+      const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+      const navLinks = document.getElementById("navLinks");
+      
+      mobileMenuBtn.addEventListener('click', function() {
+        navLinks.classList.toggle('active');
       });
-      resultsDiv.appendChild(collegeEl);
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.navbar') && navLinks.classList.contains('active')) {
+          navLinks.classList.remove('active');
+        }
+      });
     }
-  }
-}
-
-populateMainBranchOptions();
-</script>
+  </script>
 </body>
 </html>
