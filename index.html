@@ -342,7 +342,10 @@ if (mode === "simple") {
   }
 
   matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
-  const userP = mode === "simple" ? (minP + 3) : minP;
+  const userP = mode === "simple"
+  ? parseFloat(document.getElementById("percentile").value)
+  : minP;
+
   const formatUserInfo = () => mode === "simple"
     ? `Your: ${userP.toFixed(2)}`
     : `Your Range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
