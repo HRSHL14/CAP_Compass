@@ -792,136 +792,140 @@ select {
 
     // Main recommendation function
     function recommend() {
-      const mode = document.getElementById("percentileMode").value;
-      const gender = document.getElementById("gender").value;
-      const selectedGroup = document.getElementById("category").value.toUpperCase();
-      const viewMode = document.getElementById("viewMode").value;
-      const branchGroup = document.getElementById("mainBranchGroup").value;
+  const mode = document.getElementById("percentileMode").value;
+  const gender = document.getElementById("gender").value;
+  const selectedGroup = document.getElementById("category").value.toUpperCase();
+  const viewMode = document.getElementById("viewMode").value;
+  const branchGroup = document.getElementById("mainBranchGroup").value;
 
-      // Validate percentile input
-      let minP, maxP;
-      if (mode === "simple") {
-        const p = parseFloat(document.getElementById("percentile").value);
-        if (isNaN(p)) return alert("Please enter a valid percentile.");
-        if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
-        minP = p - 5;
-        maxP = p + 3;
-      } else {
-        minP = parseFloat(document.getElementById("lowerPercentile").value);
-        maxP = parseFloat(document.getElementById("upperPercentile").value);
-        if (isNaN(minP) || isNaN(maxP)) return alert("Please enter both lower and upper percentiles.");
-        if (minP < 0 || maxP > 100) return alert("Percentiles must be between 0 and 100.");
-        if (maxP <= minP) return alert("Upper percentile must be greater than lower percentile.");
-      }
+  // Validate percentile input
+  let minP, maxP;
+  if (mode === "simple") {
+    const p = parseFloat(document.getElementById("percentile").value);
+    if (isNaN(p)) return alert("Please enter a valid percentile.");
+    if (p < 0 || p > 100) return alert("Percentile must be between 0 and 100.");
+    minP = p - 5;
+    maxP = p + 3;
+  } else {
+    minP = parseFloat(document.getElementById("lowerPercentile").value);
+    maxP = parseFloat(document.getElementById("upperPercentile").value);
+    if (isNaN(minP) || isNaN(maxP)) return alert("Please enter both lower and upper percentiles.");
+    if (minP < 0 || maxP > 100) return alert("Percentiles must be between 0 and 100.");
+    if (maxP <= minP) return alert("Upper percentile must be greater than lower percentile.");
+  }
 
-      const validCategories = categoryMap[selectedGroup] || [];
-      const filteredCategories = gender === "male"
-        ? validCategories.filter(cat => !cat.startsWith("L"))
-        : validCategories;
+  const validCategories = categoryMap[selectedGroup] || [];
+  const filteredCategories = gender === "male"
+    ? validCategories.filter(cat => !cat.startsWith("L"))
+    : validCategories;
 
-      const resultsDiv = document.getElementById("results");
-      const countDiv = document.getElementById("results-count");
-      resultsDiv.innerHTML = "";
-      countDiv.innerHTML = "";
+  const resultsDiv = document.getElementById("results");
+  const countDiv = document.getElementById("results-count");
+  resultsDiv.innerHTML = "";
+  countDiv.innerHTML = "";
 
-      const matchingData = [];
-      for (const [collegeName, details] of Object.entries(collegeData)) {
-        for (const branch of details.branches || []) {
-          if (branchGroup && !branchMap[branchGroup]?.includes(branch.branch)) continue;
+  const matchingData = [];
+  for (const [collegeName, details] of Object.entries(collegeData)) {
+    for (const branch of details.branches || []) {
+      if (branchGroup && !branchMap[branchGroup]?.includes(branch.branch)) continue;
 
-          for (const cutoff of branch.cutoffs || []) {
-            if (
-              filteredCategories.includes(cutoff.category) &&
-              cutoff.percentile >= minP &&
-              cutoff.percentile <= maxP
-            ) {
-              matchingData.push({
-                collegeName,
-                branchName: branch.branch,
-                category: cutoff.category,
-                cutoffPercentile: cutoff.percentile
-              });
-            }
-          }
-        }
-      }
-
-      // Sort by cutoff percentile (descending)
-      matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
-      
-      const userP = mode === "simple"
-        ? parseFloat(document.getElementById("percentile").value)
-        : minP;
-      
-      const formatUserInfo = () => mode === "simple"
-        ? `Your percentile: ${userP.toFixed(2)}`
-        : `Your range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
-
-      countDiv.innerText = `${matchingData.length} options found`;
-
-      if (matchingData.length === 0) {
-        resultsDiv.innerHTML = `
-          <div class="alert alert-info">
-            No colleges found matching your criteria. Try adjusting your percentile range.
-          </div>
-        `;
-        return;
-      }
-
-      if (viewMode === "flat") {
-        matchingData.forEach((entry, index) => {
-          const color = userP >= entry.cutoffPercentile ? "text-success" : "text-danger";
-          const entryEl = document.createElement("div");
-          entryEl.className = "college";
-          entryEl.innerHTML = `
-            <h3 class="college-name">
-              ${index + 1}) ${entry.collegeName}
-              <span class="badge">${entry.category}</span>
-            </h3>
-            <div class="branch">
-              <span class="branch-name">${entry.branchName}</span>
-              <div class="branch-details">
-                Required percentile: <span class="${color}"><b>${entry.cutoffPercentile.toFixed(2)}</b></span><br/>
-                ${formatUserInfo()}
-              </div>
-            </div>
-          `;
-          resultsDiv.appendChild(entryEl);
-        });
-      } else {
-        const grouped = {};
-        matchingData.forEach(entry => {
-          if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
-          grouped[entry.collegeName].push(entry);
-        });
-
-        let i = 1;
-        for (const [collegeName, branches] of Object.entries(grouped)) {
-          const collegeEl = document.createElement("div");
-          collegeEl.className = "college";
-          collegeEl.innerHTML = `
-            <h3 class="college-name">
-              ${i++}) ${collegeName}
-              <span class="badge">${branches[0].category}</span>
-            </h3>
-          `;
-          
-          branches.forEach(b => {
-            const color = userP >= b.cutoffPercentile ? "text-success" : "text-danger";
-            collegeEl.innerHTML += `
-              <div class="branch">
-                <span class="branch-name">${b.branchName}</span>
-                <div class="branch-details">
-                  Required percentile: <span class="${color}"><b>${b.cutoffPercentile.toFixed(2)}</b></span><br/>
-                  ${formatUserInfo()}
-                </div>
-              </div>
-            `;
+      for (const cutoff of branch.cutoffs || []) {
+        if (
+          filteredCategories.includes(cutoff.category) &&
+          cutoff.percentile >= minP &&
+          cutoff.percentile <= maxP
+        ) {
+          matchingData.push({
+            collegeName,
+            branchName: branch.branch,
+            category: cutoff.category,
+            cutoffPercentile: cutoff.percentile,
+            rank: cutoff.rank // ✅ include rank here
           });
-          resultsDiv.appendChild(collegeEl);
         }
       }
     }
+  }
+
+  matchingData.sort((a, b) => b.cutoffPercentile - a.cutoffPercentile);
+
+  const userP = mode === "simple"
+    ? parseFloat(document.getElementById("percentile").value)
+    : minP;
+
+  const formatUserInfo = () => mode === "simple"
+    ? `Your percentile: ${userP.toFixed(2)}`
+    : `Your range: ${minP.toFixed(2)} – ${maxP.toFixed(2)}`;
+
+  countDiv.innerText = `${matchingData.length} options found`;
+
+  if (matchingData.length === 0) {
+    resultsDiv.innerHTML = `
+      <div class="alert alert-info">
+        No colleges found matching your criteria. Try adjusting your percentile range.
+      </div>
+    `;
+    return;
+  }
+
+  if (viewMode === "flat") {
+    matchingData.forEach((entry, index) => {
+      const color = userP >= entry.cutoffPercentile ? "text-success" : "text-danger";
+      const entryEl = document.createElement("div");
+      entryEl.className = "college";
+      entryEl.innerHTML = `
+        <h3 class="college-name">
+          ${index + 1}) ${entry.collegeName}
+          <span class="badge">${entry.category}</span>
+        </h3>
+        <div class="branch">
+          <span class="branch-name">${entry.branchName}</span>
+          <div class="branch-details">
+            Required percentile: <span class="${color}"><b>${entry.cutoffPercentile.toFixed(2)}</b></span><br/>
+            Required rank: <b>${entry.rank ?? 'N/A'}</b><br/>
+            ${formatUserInfo()}
+          </div>
+        </div>
+      `;
+      resultsDiv.appendChild(entryEl);
+    });
+  } else {
+    const grouped = {};
+    matchingData.forEach(entry => {
+      if (!grouped[entry.collegeName]) grouped[entry.collegeName] = [];
+      grouped[entry.collegeName].push(entry);
+    });
+
+    let i = 1;
+    for (const [collegeName, branches] of Object.entries(grouped)) {
+      const collegeEl = document.createElement("div");
+      collegeEl.className = "college";
+      collegeEl.innerHTML = `
+        <h3 class="college-name">
+          ${i++}) ${collegeName}
+          <span class="badge">${branches[0].category}</span>
+        </h3>
+      `;
+
+      branches.forEach(b => {
+        const color = userP >= b.cutoffPercentile ? "text-success" : "text-danger";
+        collegeEl.innerHTML += `
+          <div class="branch">
+            <span class="branch-name">${b.branchName}</span>
+            <div class="branch-details">
+              Required percentile: <span class="${color}"><b>${b.cutoffPercentile.toFixed(2)}</b></span><br/>
+              Required rank: <b>${b.rank ?? 'N/A'}</b><br/>
+              ${formatUserInfo()}
+            </div>
+          </div>
+        `;
+      });
+
+      resultsDiv.appendChild(collegeEl);
+    }
+  }
+}
+
 
     // Mobile menu toggle
     function setupMobileMenu() {
